@@ -1,0 +1,43 @@
+version: '3'
+
+tasks:
+  up:
+    desc: Start all services via Docker Compose (DB + App)
+    cmds:
+      - docker compose up
+
+  down:
+    desc: Stop and remove all containers
+    cmds:
+      - docker compose down -v
+
+  restart-db:
+    desc: Restart the database service
+    cmds:
+      - docker compose restart db
+
+  logs-db:
+    desc: View PostgreSQL logs
+    cmds:
+      - docker compose logs -f db
+
+  run:
+    desc: Run Go app locally (outside Docker)
+    cmds:
+      - go run cmd/main.go
+
+  test:
+    desc: Run integration tests
+    cmds:
+      - go test -v ./test/...
+
+  swagger:
+    desc: Run Go app locally (outside Docker)
+    cmds:
+      - swag init --generalInfo cmd/main.go
+
+  regenerate-schema:
+    desc: Generate flattened schema.sql
+    cmds:
+      - docker compose run --rm flyway
+      - pg_dump --schema-only --no-owner --no-privileges --dbname=postgres://username:password@localhost:5432/storage_service > migrations/schema.sql

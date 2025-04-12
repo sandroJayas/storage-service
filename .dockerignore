@@ -1,0 +1,7 @@
+.git
+node_modules
+*.log
+tmp/
+.env
+migrations/
+scripts/

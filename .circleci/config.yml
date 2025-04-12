@@ -1,0 +1,134 @@
+version: 2.1
+
+go_image: &go_image
+  image: cimg/go:1.23
+  environment:
+    POSTGRESQL_DATABASE_URI: "jdbc:postgresql://localhost:5432/storage_service?user=storage_service"
+
+executors:
+  go:
+    docker:
+      - *go_image
+
+
+commands:
+  install_postgres_client:
+    parameters:
+      distro:
+        default: "buster" # for supported values, see https://apt.postgresql.org/pub/repos/apt/dists/
+        type: string
+      sudo:
+        default: false
+        type: boolean
+    steps:
+      - run:
+          name: Download PostgreSQL client
+          command: |
+            if <<parameters.sudo>>
+            then
+                    SUDO="sudo"
+            fi
+            curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | $SUDO apt-key add -
+            echo "deb http://apt.postgresql.org/pub/repos/apt/ <<parameters.distro>>-pgdg main" | $SUDO tee /etc/apt/sources.list.d/pgdg.list
+            $SUDO apt-get update
+            $SUDO apt-get install lsb-release
+            echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | $SUDO tee  /etc/apt/sources.list.d/pgdg.list
+            $SUDO apt-get update
+            $SUDO apt-get remove libpq5
+            $SUDO apt-get install libpq-dev
+            $SUDO apt-get install -y --no-install-recommends postgresql-client-15
+  install_task_binary:
+    parameters:
+      version:
+        default: "3.39.2"
+        type: string
+      arch:
+        default: "amd64"
+        type: string
+      checksum:
+        default: "d4ea84524cc4e0969e84f063fc99b9aba2090ec259c00a2e12d9ed1a182cf6af"
+        type: string
+    steps:
+      - run:
+          name: Download task binary
+          command: |
+            curl -Lo "task.deb" https://github.com/go-task/task/releases/download/v<<parameters.version>>/task_linux_<<parameters.arch>>.deb
+            printf '%s\n' "<<parameters.checksum>>  task.deb" | sha256sum -c -
+            sudo apt install ./task.deb
+  install_dockerize:
+    steps:
+      - run:
+          name: install dockerize
+          command: |
+            curl -Lo "dockerize.tar.gz" https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz
+            printf '%s\n' "1fa29cd41a5854fd5423e242f3ea9737a50a8c3bcf852c9e62b9eb02c6ccd370  dockerize.tar.gz" | sha256sum -c -
+            sudo tar -C /usr/local/bin -xzvf dockerize.tar.gz
+  load_schema:
+    steps:
+      - run:
+          name: Load DB schema
+          command: psql --host localhost --port 5432 --username storage_service storage_service --file ~/storage-service/migrations/schema.sql --pset pager=off
+
+orbs:
+  go: circleci/go@3.0.1
+
+jobs:
+  build:
+    executor: go
+    working_directory: ~/storage-service
+    steps:
+      - checkout:
+          path: ~/storage-service
+      - run: go build -o bin/storage-service ./cmd/main.go
+      - persist_to_workspace:
+          root: ~/storage-service
+          paths:
+            - bin
+  integration-test:
+    machine:
+      image: default
+      docker_layer_caching: true
+    working_directory: ~/storage-service
+    steps:
+      - checkout:
+          path: ~/storage-service
+      - run:
+          name: start postgres
+          background: true
+          command: |
+            docker run \
+            -p 5432:5432 \
+            -e POSTGRES_USER=storage_service \
+            -e POSTGRES_DB=storage_service \
+            -e POSTGRES_HOST_AUTH_METHOD=trust \
+            cimg/postgres:15.5
+
+      - install_dockerize
+      - install_postgres_client:
+          distro: bullseye
+          sudo: true
+      - install_task_binary
+      - go/install:
+          version: "1.22.1"
+      - run:
+          name: Wait for postgres to be ready
+          command: |
+            dockerize -wait tcp://localhost:5432 -timeout 2m
+      - load_schema
+      - run:
+          name: Run the service
+          environment:
+            APP_ENV: testing
+          command: task run &
+      - run:
+          name: Wait for app to be ready
+          command: dockerize -wait http://localhost:8080/healthz -timeout 1m
+      - run:
+          name: Run integration tests
+          command: task test
+
+workflows:
+  storage-service-pipeline:
+    jobs:
+      - integration-test
+      - build

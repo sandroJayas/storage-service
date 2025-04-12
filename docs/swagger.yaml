@@ -1,0 +1,212 @@
+definitions:
+  dto.BoxResponse:
+    properties:
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.ItemDTO'
+        type: array
+      packing_mode:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.CreateBoxRequest:
+    properties:
+      item_name:
+        description: 'Optional: only used in self mode'
+        type: string
+      item_note:
+        type: string
+      packing_mode:
+        enum:
+        - self
+        - sort
+        type: string
+    required:
+    - packing_mode
+    type: object
+  dto.ItemDTO:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      quantity:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /boxes:
+    get:
+      description: Get all boxes owned by the user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/dto.BoxResponse'
+              type: array
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List user boxes
+      tags:
+      - boxes
+    post:
+      consumes:
+      - application/json
+      description: Create a new box (self or sort packing)
+      parameters:
+      - description: Box data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateBoxRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a new box
+      tags:
+      - boxes
+  /boxes/{id}:
+    delete:
+      description: Soft delete a box before pickup
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a box (soft delete)
+      tags:
+      - boxes
+    get:
+      description: Get box and items by ID
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.BoxResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a box by ID
+      tags:
+      - boxes
+  /boxes/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Update status of a box (admin action)
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update box status
+      tags:
+      - boxes
+swagger: "2.0"

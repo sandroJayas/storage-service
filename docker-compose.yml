@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:15.5-alpine
+    container_name: storage-service-db
+    environment:
+      POSTGRES_USER: storage_service
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: storage_service
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - storage_data:/var/lib/postgresql/data
+    networks:
+      - storage-net
+
+  flyway:
+    image: flyway/flyway:11.7-alpine
+    container_name: storage-service-flyway
+    depends_on:
+      - db
+    volumes:
+      - ./migrations/sql:/flyway/sql
+    command: >
+      -url=jdbc:postgresql://db:5432/storage_service
+      -user=storage_service
+      -locations=filesystem:/flyway/sql
+      migrate
+    networks:
+      - storage-net
+
+volumes:
+  storage_data:
+
+networks:
+  storage-net:
