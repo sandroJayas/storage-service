@@ -71,8 +71,8 @@ func (s *BoxService) ListUserBoxes(ctx context.Context, userID uuid.UUID) ([]dto
 	return result, nil
 }
 
-func (s *BoxService) GetBoxByID(ctx context.Context, boxID uuid.UUID) (*dto.BoxResponse, error) {
-	box, err := s.repo.FindByID(ctx, boxID)
+func (s *BoxService) GetBoxByID(ctx context.Context, boxID uuid.UUID, userID uuid.UUID) (*dto.BoxResponse, error) {
+	box, err := s.repo.FindByID(ctx, boxID, userID)
 	if err != nil {
 		return nil, err
 	}

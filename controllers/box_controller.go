@@ -86,8 +86,8 @@ func (bc *BoxController) GetBoxByID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid box ID"})
 		return
 	}
-
-	box, err := bc.service.GetBoxByID(c.Request.Context(), boxID)
+	userID := c.MustGet("user_id").(uuid.UUID)
+	box, err := bc.service.GetBoxByID(c.Request.Context(), boxID, userID)
 	if err != nil {
 		utils.Logger.Error("box not found", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})

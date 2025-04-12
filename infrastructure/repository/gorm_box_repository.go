@@ -20,9 +20,12 @@ func (r *GormBoxRepository) Create(ctx context.Context, box *models.Box) error {
 	return r.db.WithContext(ctx).Create(box).Error
 }
 
-func (r *GormBoxRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.Box, error) {
+func (r *GormBoxRepository) FindByID(ctx context.Context, id uuid.UUID, userID uuid.UUID) (*models.Box, error) {
 	var box models.Box
-	err := r.db.WithContext(ctx).Preload("Items").First(&box, "id = ?", id).Error
+	err := r.db.WithContext(ctx).
+		Preload("Items").
+		Where("id = ? AND user_id = ?", id, userID).
+		First(&box).Error
 	if err != nil {
 		return nil, err
 	}
