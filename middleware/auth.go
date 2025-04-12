@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"strings"
@@ -41,7 +42,19 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims["user_id"])
+		userIDStr, ok := claims["user_id"].(string)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user_id claim is missing or invalid"})
+			return
+		}
+
+		userID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid user ID format"})
+			return
+		}
+
+		c.Set("user_id", userID)
 		c.Next()
 	}
 }
