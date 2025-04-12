@@ -26,6 +26,12 @@ tasks:
     cmds:
       - go run cmd/main.go
 
+  run-user-service:
+    desc: Run user service
+    cmds:
+      - ./scripts/run-user-service-test-env.sh {{.MODE}}
+    vars:
+      MODE: '{{.MODE | default "watch"}}'
   test:
     desc: Run integration tests
     cmds:
@@ -40,4 +46,4 @@ tasks:
     desc: Generate flattened schema.sql
     cmds:
       - docker compose run --rm flyway
-      - pg_dump --schema-only --no-owner --no-privileges --dbname=postgres://username:password@localhost:5432/storage_service > migrations/schema.sql
+      - pg_dump --schema-only --no-owner --no-privileges --dbname=postgresql://localhost:5432/storage_service?user=storage_service > migrations/schema.sql
