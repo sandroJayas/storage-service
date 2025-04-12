@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/sandroJayas/storage-service/dto"
 	"github.com/sandroJayas/storage-service/usecase"
-	"net/http"
+	"github.com/sandroJayas/storage-service/utils"
+	"go.uber.org/zap"
 )
 
 type BoxController struct {
@@ -30,6 +33,7 @@ func NewBoxController(service *usecase.BoxService) *BoxController {
 func (bc *BoxController) CreateBox(c *gin.Context) {
 	var req dto.CreateBoxRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.Logger.Warn("invalid box creation input", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -37,9 +41,12 @@ func (bc *BoxController) CreateBox(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
 	boxID, err := bc.service.CreateBox(c.Request.Context(), userID, req)
 	if err != nil {
+		utils.Logger.Error("box creation failed", zap.String("user_id", userID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	utils.Logger.Info("box created", zap.String("box_id", boxID.String()), zap.String("user_id", userID.String()))
 	c.JSON(http.StatusCreated, gin.H{"id": boxID})
 }
 
@@ -55,6 +62,7 @@ func (bc *BoxController) ListUserBoxes(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
 	boxes, err := bc.service.ListUserBoxes(c.Request.Context(), userID)
 	if err != nil {
+		utils.Logger.Error("listing user boxes failed", zap.String("user_id", userID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -74,12 +82,14 @@ func (bc *BoxController) ListUserBoxes(c *gin.Context) {
 func (bc *BoxController) GetBoxByID(c *gin.Context) {
 	boxID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		utils.Logger.Warn("invalid box ID format", zap.String("id", c.Param("id")), zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid box ID"})
 		return
 	}
 
 	box, err := bc.service.GetBoxByID(c.Request.Context(), boxID)
 	if err != nil {
+		utils.Logger.Error("box not found", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
@@ -101,6 +111,7 @@ func (bc *BoxController) GetBoxByID(c *gin.Context) {
 func (bc *BoxController) UpdateStatus(c *gin.Context) {
 	boxID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		utils.Logger.Warn("invalid box ID for status update", zap.String("id", c.Param("id")), zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid box ID"})
 		return
 	}
@@ -109,14 +120,17 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 		Status string `json:"status" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
+		utils.Logger.Warn("invalid status update payload", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if err := bc.service.UpdateStatus(c.Request.Context(), boxID, body.Status); err != nil {
+		utils.Logger.Error("status update failed", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	utils.Logger.Info("box status updated", zap.String("box_id", boxID.String()), zap.String("status", body.Status))
 	c.JSON(http.StatusOK, gin.H{"message": "Box status updated"})
 }
 
@@ -133,13 +147,16 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 func (bc *BoxController) DeleteBox(c *gin.Context) {
 	boxID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		utils.Logger.Warn("invalid box ID for deletion", zap.String("id", c.Param("id")), zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid box ID"})
 		return
 	}
 
 	if err := bc.service.DeleteBox(c.Request.Context(), boxID); err != nil {
+		utils.Logger.Error("box deletion failed", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	utils.Logger.Info("box deleted", zap.String("box_id", boxID.String()))
 	c.JSON(http.StatusOK, gin.H{"message": "Box deleted"})
 }
