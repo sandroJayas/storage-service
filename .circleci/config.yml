@@ -116,17 +116,18 @@ jobs:
             dockerize -wait tcp://localhost:5432 -timeout 2m
       - load_schema
       - run:
+          background: true
           name: Run the service
           environment:
             APP_ENV: testing
             OTEL_EXPORTER_OTLP_HEADERS: some-header
-          command: task run &
+          command: task run
       - run:
           name: Run user-service
           command: task run-user-service MODE=no-watch
       - run:
           name: Wait for storage-service to be ready
-          command: dockerize -wait http://localhost:8080/healthz -timeout 1m
+          command: dockerize -wait http://localhost:8080/healthz -timeout 2m
       - run:
           name: Run integration tests
           command: task test
