@@ -15,6 +15,7 @@ task run
 
 ```
 docker compose up
+task run-user-service
 task run
 task test
 ```
