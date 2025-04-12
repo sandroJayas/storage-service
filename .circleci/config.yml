@@ -36,7 +36,7 @@ commands:
             $SUDO apt-get update
             $SUDO apt-get remove libpq5
             $SUDO apt-get install libpq-dev
-            $SUDO apt-get install -y --no-install-recommends postgresql-client-15
+            $SUDO apt-get install -y --no-install-recommends postgresql-client-17
   install_task_binary:
     parameters:
       version:
@@ -131,9 +131,31 @@ jobs:
       - run:
           name: Run integration tests
           command: task test
-
+  check-schema:
+    machine:
+      image: default
+    working_directory: ~/user-service
+    steps:
+      - checkout
+      - install_task_binary
+      - install_postgres_client:
+          distro: bullseye
+          sudo: true
+      - run:
+          name: Generate schema
+          command: task regenerate-schema
+      - run:
+          name: Check if schema.sql is up to date
+          command: |
+            if ! git diff --exit-code -- migrations/schema.sql; then
+              echo "❌ You forgot to run task generate-schema"
+              exit 1
+            fi
 workflows:
   storage-service-pipeline:
     jobs:
-      - integration-test
+      - check-schema
+      - integration-test:
+          requires:
+            - check-schema
       - build
