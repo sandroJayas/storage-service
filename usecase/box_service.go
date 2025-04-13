@@ -104,3 +104,7 @@ func (s *BoxService) UpdateStatus(ctx context.Context, boxID uuid.UUID, newStatu
 func (s *BoxService) DeleteBox(ctx context.Context, boxID uuid.UUID) error {
 	return s.repo.SoftDelete(ctx, boxID)
 }
+
+func (s *BoxService) UpdateItem(ctx context.Context, boxID, itemID uuid.UUID, req dto.UpdateItemRequest) error {
+	return s.repo.UpdateItem(ctx, boxID, itemID, req)
+}

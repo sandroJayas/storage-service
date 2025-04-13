@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/sandroJayas/storage-service/dto"
 	"github.com/sandroJayas/storage-service/models"
 
 	"github.com/google/uuid"
@@ -44,4 +45,30 @@ func (r *GormBoxRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 
 func (r *GormBoxRepository) SoftDelete(ctx context.Context, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("id = ?", id).Delete(&models.Box{}).Error
+}
+
+func (r *GormBoxRepository) UpdateItem(ctx context.Context, boxID, itemID uuid.UUID, req dto.UpdateItemRequest) error {
+	var updates = map[string]interface{}{}
+
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+	if req.Quantity != nil {
+		updates["quantity"] = *req.Quantity
+	}
+	if req.ImageURL != nil {
+		updates["image_url"] = *req.ImageURL
+	}
+
+	if len(updates) == 0 {
+		return nil // Nothing to update
+	}
+
+	return r.db.WithContext(ctx).
+		Model(&models.Item{}).
+		Where("id = ? AND box_id = ?", itemID, boxID).
+		Updates(updates).Error
 }

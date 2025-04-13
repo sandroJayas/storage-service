@@ -40,6 +40,17 @@ definitions:
       quantity:
         type: integer
     type: object
+  dto.UpdateItemRequest:
+    properties:
+      description:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      quantity:
+        type: integer
+    type: object
 info:
   contact: {}
 paths:
@@ -164,6 +175,58 @@ paths:
               type: string
             type: object
       summary: Get a box by ID
+      tags:
+      - boxes
+  /boxes/{id}/items/{item_id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update fields like name, description, quantity, image_url
+      parameters:
+      - description: Box ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Item ID
+        in: path
+        name: item_id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update an item inside a box
       tags:
       - boxes
   /boxes/{id}/status:

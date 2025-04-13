@@ -34,5 +34,6 @@ func RegisterStorageRoutes(r *gin.Engine, boxController *controllers.BoxControll
 		routes.GET(":id", middleware.AuthMiddleware(), boxController.GetBoxByID)
 		routes.PATCH(":id/status", middleware.AuthMiddleware(), boxController.UpdateStatus)
 		routes.DELETE(":id", middleware.AuthMiddleware(), boxController.DeleteBox)
+		routes.PATCH(":id/items/:item_id", middleware.AuthMiddleware(), boxController.UpdateItem)
 	}
 }
