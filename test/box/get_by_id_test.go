@@ -109,6 +109,23 @@ func TestGetBoxByID(t *testing.T) {
 		assert.Nil(t, box["items"])
 	})
 
+	t.Run("deleted box should not be accessible", func(t *testing.T) {
+		// Delete the sort box
+		req, _ := http.NewRequest(http.MethodDelete, boxBaseURL+"/"+sortBoxID, nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		// Try to fetch the deleted box
+		req, _ = http.NewRequest(http.MethodGet, boxBaseURL+"/"+sortBoxID, nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		resp, err = http.DefaultClient.Do(req)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
 	t.Run("unauthorized access should fail", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, boxBaseURL+"/"+selfBoxID, nil)
 		resp, err := http.DefaultClient.Do(req)

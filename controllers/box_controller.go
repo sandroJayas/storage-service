@@ -117,7 +117,7 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 	}
 
 	var body struct {
-		Status string `json:"status" binding:"required"`
+		Status string `json:"status" binding:"required,oneof=pending_pickup stored in_transit returned disposed"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Logger.Warn("invalid status update payload", zap.String("box_id", boxID.String()), zap.Error(err))
@@ -125,6 +125,13 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
+	userID := c.MustGet("user_id").(uuid.UUID)
+	_, err = bc.service.GetBoxByID(c.Request.Context(), boxID, userID)
+	if err != nil {
+		utils.Logger.Error("box not found", zap.String("box_id", boxID.String()), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 	if err := bc.service.UpdateStatus(c.Request.Context(), boxID, body.Status); err != nil {
 		utils.Logger.Error("status update failed", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -152,6 +159,13 @@ func (bc *BoxController) DeleteBox(c *gin.Context) {
 		return
 	}
 
+	userID := c.MustGet("user_id").(uuid.UUID)
+	_, err = bc.service.GetBoxByID(c.Request.Context(), boxID, userID)
+	if err != nil {
+		utils.Logger.Error("box not found", zap.String("box_id", boxID.String()), zap.Error(err))
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 	if err := bc.service.DeleteBox(c.Request.Context(), boxID); err != nil {
 		utils.Logger.Error("box deletion failed", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
