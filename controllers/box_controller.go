@@ -101,14 +101,14 @@ func (bc *BoxController) GetBoxByID(c *gin.Context) {
 	box, err := bc.service.GetBoxByID(c.Request.Context(), boxID, userID)
 	if err != nil {
 		utils.Logger.Warn("Box not found or not accessible",
-			zap.String("id", boxID.String()),
+			zap.String("box_id", boxID.String()),
 			zap.String("user_id", userID.String()),
 			zap.Error(err))
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
 	utils.Logger.Info("Box retrieved successfully",
-		zap.String("id", boxID.String()),
+		zap.String("box_id", boxID.String()),
 		zap.String("user_id", userID.String()))
 	c.JSON(http.StatusOK, gin.H{"box": box})
 }
@@ -140,24 +140,24 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Logger.Warn("Invalid status update payload",
-			zap.String("id", boxID.String()),
+			zap.String("box_id", boxID.String()),
 			zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := bc.assertBoxOwnership(c, boxID, userID); err != nil {
+	if err := assertBoxOwnership(bc.service, c, boxID, userID); err != nil {
 		return
 	}
 
 	if err := bc.service.UpdateStatus(c.Request.Context(), boxID, body.Status); err != nil {
-		utils.Logger.Error("Failed to update box status", zap.String("id", boxID.String()), zap.Error(err))
+		utils.Logger.Error("Failed to update box status", zap.String("box_id", boxID.String()), zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	utils.Logger.Info("Box status updated successfully",
-		zap.String("id", boxID.String()),
+		zap.String("box_id", boxID.String()),
 		zap.String("new_status", body.Status))
 	c.JSON(http.StatusOK, gin.H{"message": "Box status updated"})
 }
@@ -183,89 +183,26 @@ func (bc *BoxController) DeleteBox(c *gin.Context) {
 	}
 
 	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := bc.assertBoxOwnership(c, boxID, userID); err != nil {
+	if err := assertBoxOwnership(bc.service, c, boxID, userID); err != nil {
 		return
 	}
 
 	if err := bc.service.DeleteBox(c.Request.Context(), boxID); err != nil {
 		utils.Logger.Error("Failed to delete box",
-			zap.String("id", boxID.String()),
+			zap.String("box_id", boxID.String()),
 			zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	utils.Logger.Info("Box soft deleted successfully", zap.String("id", boxID.String()))
+	utils.Logger.Info("Box soft deleted successfully", zap.String("box_id", boxID.String()))
 	c.JSON(http.StatusOK, gin.H{"message": "Box deleted"})
 }
 
-// UpdateItem godoc
-// @Summary Update an item inside a box
-// @Description Update fields like name, description, quantity, image_url
-// @Tags boxes
-// @Accept json
-// @Produce json
-// @Param id path string true "Box ID"
-// @Param item_id path string true "Item ID"
-// @Param body body dto.UpdateItemRequest true "Fields to update"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /boxes/{id}/items/{item_id} [patch]
-func (bc *BoxController) UpdateItem(c *gin.Context) {
-	boxID, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		utils.Logger.Warn("Invalid box ID for item update",
-			zap.String("id", c.Param("id")),
-			zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid box ID"})
-		return
-	}
-	itemID, err := uuid.Parse(c.Param("item_id"))
-	if err != nil {
-		utils.Logger.Warn("Invalid item ID for update",
-			zap.String("item_id", c.Param("item_id")),
-			zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid item ID"})
-		return
-	}
-
-	var req dto.UpdateItemRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.Logger.Warn("Invalid item update payload",
-			zap.String("item_id", itemID.String()),
-			zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := bc.assertBoxOwnership(c, boxID, userID); err != nil {
-		return
-	}
-
-	if err := bc.service.UpdateItem(c.Request.Context(), boxID, itemID, req); err != nil {
-		utils.Logger.Error("Failed to update item",
-			zap.String("id", boxID.String()),
-			zap.String("item_id", itemID.String()),
-			zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	utils.Logger.Info("Item updated successfully",
-		zap.String("id", boxID.String()),
-		zap.String("item_id", itemID.String()),
-		zap.String("user_id", userID.String()),
-		zap.Any("fields", req),
-	)
-	c.JSON(http.StatusOK, gin.H{"message": "Item updated successfully"})
-}
-
-func (bc *BoxController) assertBoxOwnership(c *gin.Context, boxID uuid.UUID, userID uuid.UUID) error {
-	_, err := bc.service.GetBoxByID(c.Request.Context(), boxID, userID)
+func assertBoxOwnership(service *usecase.BoxService, c *gin.Context, boxID, userID uuid.UUID) error {
+	_, err := service.GetBoxByID(c.Request.Context(), boxID, userID)
 	if err != nil {
 		utils.Logger.Warn("Unauthorized access or box not found",
-			zap.String("id", boxID.String()),
+			zap.String("box_id", boxID.String()),
 			zap.String("user_id", userID.String()),
 			zap.Error(err))
 		c.JSON(http.StatusNotFound, gin.H{"error": "box not found or not accessible"})

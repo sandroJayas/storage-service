@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func RegisterStorageRoutes(r *gin.Engine, boxController *controllers.BoxController, db *gorm.DB) {
+func RegisterStorageRoutes(r *gin.Engine, boxController *controllers.BoxController, itemController *controllers.ItemController, db *gorm.DB) {
 
 	r.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -27,13 +27,26 @@ func RegisterStorageRoutes(r *gin.Engine, boxController *controllers.BoxControll
 
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	routes := r.Group("/boxes")
+	boxes := r.Group("/boxes")
+	boxes.Use(middleware.AuthMiddleware())
+	boxes.Use(middleware.RateLimitMiddleware())
 	{
-		routes.POST("", middleware.AuthMiddleware(), boxController.CreateBox)
-		routes.GET("", middleware.AuthMiddleware(), boxController.ListUserBoxes)
-		routes.GET(":id", middleware.AuthMiddleware(), boxController.GetBoxByID)
-		routes.PATCH(":id/status", middleware.AuthMiddleware(), boxController.UpdateStatus)
-		routes.DELETE(":id", middleware.AuthMiddleware(), boxController.DeleteBox)
-		routes.PATCH(":id/items/:item_id", middleware.AuthMiddleware(), boxController.UpdateItem)
+		boxes.POST("", boxController.CreateBox)
+		boxes.GET("", boxController.ListUserBoxes)
+		boxes.GET(":id", boxController.GetBoxByID)
+		boxes.PATCH(":id/status", boxController.UpdateStatus)
+		boxes.DELETE(":id", boxController.DeleteBox)
+
+		boxes.POST(":id/items", itemController.AddItem)
+		boxes.GET(":id/items", itemController.ListItems)
+	}
+
+	items := r.Group("/items")
+	items.Use(middleware.AuthMiddleware())
+	boxes.Use(middleware.RateLimitMiddleware())
+	{
+		items.GET(":id", itemController.GetItem)
+		items.PATCH(":id", itemController.UpdateItemByID)
+		items.DELETE(":id", itemController.DeleteItem)
 	}
 }

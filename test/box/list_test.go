@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/sandroJayas/storage-service/test"
 	"net/http"
 	"testing"
 	"time"
@@ -14,28 +15,8 @@ func TestListUserBoxes(t *testing.T) {
 	timestamp := time.Now().Format("150405")
 	email := "list+" + timestamp + "@test.com"
 	password := "strongpass123"
-	var token string
 
-	t.Run("setup - register + login", func(t *testing.T) {
-		// Register
-		register := map[string]string{"email": email, "password": password}
-		body, _ := json.Marshal(register)
-		resp, err := http.Post(userBaseURL+"/users/register", "application/json", bytes.NewReader(body))
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode)
-
-		// Login
-		login := map[string]string{"email": email, "password": password}
-		body, _ = json.Marshal(login)
-		resp, err = http.Post(userBaseURL+"/users/login", "application/json", bytes.NewReader(body))
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-		var res map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&res)
-		token = res["token"].(string)
-		assert.NotEmpty(t, token)
-	})
+	token := test.RegisterAndLogin(t, email, password)
 
 	t.Run("list - no boxes yet", func(t *testing.T) {
 		req, _ := http.NewRequest(http.MethodGet, boxBaseURL, nil)

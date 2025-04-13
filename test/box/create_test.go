@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/sandroJayas/storage-service/test"
 	"net/http"
 	"testing"
 	"time"
@@ -18,32 +19,7 @@ func TestCreateBox(t *testing.T) {
 
 	email := "box+" + timestamp + "@test.com"
 	password := "testpass123"
-	var token string
-
-	t.Run("setup - register and login", func(t *testing.T) {
-		// Register
-		body, _ := json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		resp, err := http.Post(userBaseURL+"/users/register", "application/json", bytes.NewReader(body))
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusCreated, resp.StatusCode)
-
-		// Login
-		body, _ = json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		resp, err = http.Post(userBaseURL+"/users/login", "application/json", bytes.NewReader(body))
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-		var res map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&res)
-		token = res["token"].(string)
-		assert.NotEmpty(t, token)
-	})
+	token := test.RegisterAndLogin(t, email, password)
 
 	t.Run("create box - self - full validation", func(t *testing.T) {
 		boxReq := map[string]string{

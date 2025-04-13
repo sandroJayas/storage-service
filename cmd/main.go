@@ -31,12 +31,16 @@ func main() {
 	boxService := usecase.NewBoxService(boxRepo)
 	boxController := controllers.NewBoxController(boxService)
 
+	itemRepo := repository.NewGormItemRepository(db)
+	itemService := usecase.NewItemService(itemRepo, boxRepo)
+	itemController := controllers.NewItemController(itemService, boxService)
+
 	shutdown := utils.InitTracer()
 	defer shutdown(context.Background())
 
 	r := gin.Default()
-	routes.RegisterStorageRoutes(r, boxController, db)
-	r.Use(otelgin.Middleware("box-service"))
+	routes.RegisterStorageRoutes(r, boxController, itemController, db)
+	r.Use(otelgin.Middleware("storage-service"))
 
 	//graceful shutdown
 	srv := &http.Server{

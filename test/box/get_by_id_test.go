@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/sandroJayas/storage-service/test"
 	"net/http"
 	"testing"
 	"time"
@@ -14,27 +15,11 @@ func TestGetBoxByID(t *testing.T) {
 	timestamp := time.Now().Format("150405")
 	email := "boxget+" + timestamp + "@test.com"
 	password := "testpass123"
-	var token string
+
 	var selfBoxID string
 	var sortBoxID string
 
-	t.Run("setup - register and login", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		http.Post(userBaseURL+"/users/register", "application/json", bytes.NewReader(body))
-
-		body, _ = json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		resp, _ := http.Post(userBaseURL+"/users/login", "application/json", bytes.NewReader(body))
-
-		var res map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&res)
-		token = res["token"].(string)
-	})
+	token := test.RegisterAndLogin(t, email, password)
 
 	t.Run("setup - create self and sort boxes", func(t *testing.T) {
 		// self

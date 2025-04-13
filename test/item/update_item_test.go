@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/sandroJayas/storage-service/test"
 	"net/http"
 	"testing"
 	"time"
@@ -15,27 +16,10 @@ func TestUpdateItem(t *testing.T) {
 	email := "updateitem+" + timestamp + "@test.com"
 	password := "supersecurepass"
 
-	var token string
 	var boxID string
 	var itemID string
 
-	t.Run("setup - register and login", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		http.Post(userBaseURL+"/users/register", "application/json", bytes.NewReader(body))
-
-		body, _ = json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		resp, _ := http.Post(userBaseURL+"/users/login", "application/json", bytes.NewReader(body))
-
-		var res map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&res)
-		token = res["token"].(string)
-	})
+	token := test.RegisterAndLogin(t, email, password)
 
 	t.Run("setup - create self box", func(t *testing.T) {
 		boxReq := map[string]string{
@@ -74,7 +58,7 @@ func TestUpdateItem(t *testing.T) {
 			"description": "Updated Smartwatch",
 		}
 		body, _ := json.Marshal(updateReq)
-		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/items/"+itemID, bytes.NewReader(body))
+		req, _ := http.NewRequest(http.MethodPatch, "http://localhost:8080/items/"+itemID, bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -89,7 +73,7 @@ func TestUpdateItem(t *testing.T) {
 			"image_url": "http://example.com/item.jpg",
 		}
 		body, _ := json.Marshal(updateReq)
-		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/items/"+itemID, bytes.NewReader(body))
+		req, _ := http.NewRequest(http.MethodPatch, "http://localhost:8080/items/"+itemID, bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
 
@@ -127,7 +111,7 @@ func TestUpdateItem(t *testing.T) {
 
 		updateReq := map[string]string{"name": "Hacked"}
 		body, _ = json.Marshal(updateReq)
-		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/items/"+itemID, bytes.NewReader(body))
+		req, _ := http.NewRequest(http.MethodPatch, "http://localhost:8080/items/"+itemID, bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+secondToken)
 		req.Header.Set("Content-Type", "application/json")
 

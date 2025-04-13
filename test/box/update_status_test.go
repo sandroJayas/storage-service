@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/sandroJayas/storage-service/test"
 	"net/http"
 	"testing"
 	"time"
@@ -17,43 +18,22 @@ func TestUpdateStatus(t *testing.T) {
 	email := "admin+" + timestamp + "@test.com"
 	password := "supersecure123"
 
-	var token string
 	var boxID string
+	token := test.RegisterAndLogin(t, email, password)
 
-	t.Run("setup - register, login and create box", func(t *testing.T) {
-		// Register
-		body, _ := json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		http.Post(userBaseURL+"/users/register", "application/json", bytes.NewReader(body))
-
-		// Login
-		body, _ = json.Marshal(map[string]string{
-			"email":    email,
-			"password": password,
-		})
-		resp, err := http.Post(userBaseURL+"/users/login", "application/json", bytes.NewReader(body))
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-		var res map[string]interface{}
-		_ = json.NewDecoder(resp.Body).Decode(&res)
-		token = res["token"].(string)
-
-		// Create box
+	t.Run("setup - create box", func(t *testing.T) {
 		boxReq := map[string]string{
 			"packing_mode": "self",
 			"item_name":    "Status Check Item",
 			"item_note":    "Should be updated",
 		}
-		body, _ = json.Marshal(boxReq)
+		body, _ := json.Marshal(boxReq)
 		req, _ := http.NewRequest(http.MethodPost, boxBaseURL, bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json")
 
 		client := http.Client{}
-		resp, err = client.Do(req)
+		resp, err := client.Do(req)
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
