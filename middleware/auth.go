@@ -54,7 +54,14 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		accountType, ok := claims["account_type"].(string)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "account_type claim is missing or invalid"})
+			return
+		}
+
 		c.Set("user_id", userID)
+		c.Set("account_type", accountType)
 		c.Next()
 	}
 }

@@ -50,7 +50,8 @@ func (ic *ItemController) AddItem(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := assertBoxOwnership(ic.boxService, c, boxID, userID); err != nil {
+	accountType := c.GetString("account_type")
+	if err := assertBoxOwnership(ic.boxService, c, boxID, userID, &accountType); err != nil {
 		return
 	}
 	itemID, err := ic.itemService.AddItem(c.Request.Context(), boxID, userID, req)
@@ -82,7 +83,8 @@ func (ic *ItemController) ListItems(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := assertBoxOwnership(ic.boxService, c, boxID, userID); err != nil {
+	accountType := c.GetString("account_type")
+	if err := assertBoxOwnership(ic.boxService, c, boxID, userID, &accountType); err != nil {
 		return
 	}
 	items, err := ic.itemService.ListBoxItems(c.Request.Context(), boxID, userID)
