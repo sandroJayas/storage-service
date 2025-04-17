@@ -1,4 +1,19 @@
 definitions:
+  dto.AddItemRequest:
+    properties:
+      description:
+        type: string
+      image_url:
+        type: string
+      name:
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - name
+    - quantity
+    type: object
   dto.BoxResponse:
     properties:
       id:
@@ -177,58 +192,94 @@ paths:
       summary: Get a box by ID
       tags:
       - boxes
-  /boxes/{id}/items/{item_id}:
-    patch:
-      consumes:
-      - application/json
-      description: Update fields like name, description, quantity, image_url
+  /boxes/{id}/items:
+    get:
+      description: Returns all items for a given box ID. Only the box owner can access
+        this.
       parameters:
       - description: Box ID
         in: path
-        name: id
+        name: box_id
         required: true
         type: string
-      - description: Item ID
-        in: path
-        name: item_id
-        required: true
-        type: string
-      - description: Fields to update
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateItemRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: List of items
           schema:
             additionalProperties:
-              type: string
+              items:
+                $ref: '#/definitions/dto.ItemDTO'
+              type: array
             type: object
         "400":
-          description: Bad Request
+          description: Invalid box ID
           schema:
             additionalProperties:
               type: string
             type: object
         "404":
-          description: Not Found
+          description: Box not found or inaccessible
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
             additionalProperties:
               type: string
             type: object
-      summary: Update an item inside a box
+      summary: List items in a sort-packed box
       tags:
-      - boxes
+      - items
+    post:
+      consumes:
+      - application/json
+      description: Only applicable for boxes packed by Sort staff.
+      parameters:
+      - description: Box ID
+        in: path
+        name: box_id
+        required: true
+        type: string
+      - description: Item data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddItemRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: ID of the created item
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid box ID or request payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Box not found or inaccessible
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add an item to a sort-packed box
+      tags:
+      - items
   /boxes/{id}/status:
     patch:
       consumes:
@@ -272,4 +323,125 @@ paths:
       summary: Update box status
       tags:
       - boxes
+  /items/{id}:
+    delete:
+      description: Deletes the item if it exists and belongs to the user
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid item ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Item not found or inaccessible
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete an item
+      tags:
+      - items
+    get:
+      description: Returns a single item's full details
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item details
+          schema:
+            $ref: '#/definitions/dto.ItemDTO'
+        "400":
+          description: Invalid item ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Item not found or inaccessible
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a single item by ID
+      tags:
+      - items
+    patch:
+      consumes:
+      - application/json
+      description: Updates fields of an item (name, description, quantity, image_url)
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateItemRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Item updated successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Invalid item ID or payload
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Item not found or inaccessible
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update item by ID
+      tags:
+      - items
 swagger: "2.0"
