@@ -48,7 +48,7 @@ CREATE TABLE public.boxes (
     updated_at timestamp without time zone DEFAULT now() NOT NULL,
     deleted_at timestamp without time zone,
     CONSTRAINT boxes_packing_mode_check CHECK (((packing_mode)::text = ANY ((ARRAY['self'::character varying, 'sort'::character varying])::text[]))),
-    CONSTRAINT boxes_status_check CHECK (((status)::text = ANY ((ARRAY['pending_pickup'::character varying, 'stored'::character varying, 'in_transit'::character varying, 'returned'::character varying, 'disposed'::character varying])::text[])))
+    CONSTRAINT boxes_status_check CHECK (((status)::text = ANY ((ARRAY['in_transit'::character varying, 'pending_pack'::character varying, 'pending_pickup'::character varying, 'stored'::character varying, 'returned'::character varying, 'disposed'::character varying])::text[])))
 );
 
 
