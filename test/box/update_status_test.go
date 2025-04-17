@@ -15,11 +15,13 @@ import (
 func TestUpdateStatus(t *testing.T) {
 	timestamp := time.Now().Format("150405")
 
-	email := "admin+" + timestamp + "@test.com"
+	email := "user+" + timestamp + "@test.com"
+	emailEmployee := "admin+" + timestamp + "@test.com"
 	password := "supersecure123"
 
 	var boxID string
 	token := test.RegisterAndLogin(t, email, password)
+	tokenEmployee := test.RegisterAndLoginEmployee(t, emailEmployee, password)
 
 	t.Run("setup - create box", func(t *testing.T) {
 		boxReq := map[string]string{
@@ -46,7 +48,7 @@ func TestUpdateStatus(t *testing.T) {
 
 	t.Run("update - valid status change", func(t *testing.T) {
 		body, _ := json.Marshal(map[string]string{
-			"status": "stored",
+			"status": "pending_pickup",
 		})
 		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/status", bytes.NewReader(body))
 		req.Header.Set("Authorization", "Bearer "+token)
@@ -67,7 +69,59 @@ func TestUpdateStatus(t *testing.T) {
 
 		var res map[string]map[string]interface{}
 		_ = json.NewDecoder(resp.Body).Decode(&res)
-		assert.Equal(t, "stored", res["box"]["status"])
+		assert.Equal(t, "pending_pickup", res["box"]["status"])
+	})
+
+	t.Run("update - returned - forbidden status for non-employee", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{
+			"status": "returned",
+		})
+		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/status", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+	})
+
+	t.Run("update - stored- forbidden status for non-employee", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{
+			"status": "stored",
+		})
+		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/status", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusForbidden, resp.StatusCode)
+	})
+
+	t.Run("update - stored status for employee", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{
+			"status": "stored",
+		})
+		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/status", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+tokenEmployee)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+
+	t.Run("update - returned status for employee", func(t *testing.T) {
+		body, _ := json.Marshal(map[string]string{
+			"status": "returned",
+		})
+		req, _ := http.NewRequest(http.MethodPatch, boxBaseURL+"/"+boxID+"/status", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+tokenEmployee)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("update - invalid status", func(t *testing.T) {
@@ -140,7 +194,7 @@ func TestUpdateStatus(t *testing.T) {
 
 		// Try to update User A’s box using User B’s token
 		updateReq := map[string]string{
-			"status": "stored",
+			"status": "pending_pack",
 		}
 		body, _ = json.Marshal(updateReq)
 		url := fmt.Sprintf("%s/%s/status", boxBaseURL, boxID)

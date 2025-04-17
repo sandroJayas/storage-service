@@ -129,7 +129,8 @@ paths:
       - boxes
   /boxes/{id}:
     delete:
-      description: Soft delete a box before pickup
+      description: Soft delete a box. Employees can delete any box, users can only
+        delete their own.
       parameters:
       - description: Box ID
         in: path
@@ -140,19 +141,25 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Box deleted successfully
           schema:
             additionalProperties:
               type: string
             type: object
         "400":
-          description: Bad Request
+          description: Invalid box ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Box not found or inaccessible
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
             additionalProperties:
               type: string
@@ -284,7 +291,8 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Update status of a box (admin action)
+      description: Update the status of a box. Only employees can set status to 'stored'
+        or 'returned'.
       parameters:
       - description: Box ID
         in: path
@@ -303,19 +311,31 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: Box status updated successfully
           schema:
             additionalProperties:
               type: string
             type: object
         "400":
-          description: Bad Request
+          description: Invalid box ID or status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Admin access required for this status
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Box not found or inaccessible
           schema:
             additionalProperties:
               type: string
             type: object
         "500":
-          description: Internal Server Error
+          description: Internal server error
           schema:
             additionalProperties:
               type: string

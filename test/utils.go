@@ -41,6 +41,36 @@ func RegisterAndLogin(t *testing.T, email string, password string) string {
 	return token
 }
 
+func RegisterAndLoginEmployee(t *testing.T, email string, password string) string {
+	var token string
+
+	t.Run("setup - register and login", func(t *testing.T) {
+		// Register
+		body, _ := json.Marshal(map[string]string{
+			"email":    email,
+			"password": password,
+		})
+		resp, err := http.Post(userBaseURL+"/users/create-employee", "application/json", bytes.NewReader(body))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+		// Login
+		body, _ = json.Marshal(map[string]string{
+			"email":    email,
+			"password": password,
+		})
+		resp, err = http.Post(userBaseURL+"/users/login", "application/json", bytes.NewReader(body))
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var res map[string]interface{}
+		_ = json.NewDecoder(resp.Body).Decode(&res)
+		token = res["token"].(string)
+		assert.NotEmpty(t, token)
+	})
+	return token
+}
+
 func CreateSortPackedBox(t *testing.T, token string) string {
 	boxReq := map[string]string{
 		"packing_mode": "sort",

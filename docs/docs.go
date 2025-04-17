@@ -153,7 +153,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Soft delete a box before pickup",
+                "description": "Soft delete a box. Employees can delete any box, users can only delete their own.",
                 "produces": [
                     "application/json"
                 ],
@@ -172,7 +172,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Box deleted successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -181,7 +181,16 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid box ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Box not found or inaccessible",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -190,7 +199,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -334,7 +343,7 @@ const docTemplate = `{
         },
         "/boxes/{id}/status": {
             "patch": {
-                "description": "Update status of a box (admin action)",
+                "description": "Update the status of a box. Only employees can set status to 'stored' or 'returned'.",
                 "consumes": [
                     "application/json"
                 ],
@@ -368,7 +377,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Box status updated successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -377,7 +386,25 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Invalid box ID or status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Admin access required for this status",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Box not found or inaccessible",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -386,7 +413,7 @@ const docTemplate = `{
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

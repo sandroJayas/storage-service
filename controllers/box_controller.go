@@ -115,15 +115,17 @@ func (bc *BoxController) GetBoxByID(c *gin.Context) {
 
 // UpdateStatus godoc
 // @Summary Update box status
-// @Description Update status of a box (admin action)
+// @Description Update the status of a box. Only employees can set status to 'stored' or 'returned'.
 // @Tags boxes
 // @Accept json
 // @Produce json
 // @Param id path string true "Box ID"
 // @Param body body map[string]string true "New status"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Success 200 {object} map[string]string "Box status updated successfully"
+// @Failure 400 {object} map[string]string "Invalid box ID or status"
+// @Failure 403 {object} map[string]string "Admin access required for this status"
+// @Failure 404 {object} map[string]string "Box not found or inaccessible"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /boxes/{id}/status [patch]
 func (bc *BoxController) UpdateStatus(c *gin.Context) {
 	boxID, err := uuid.Parse(c.Param("id"))
@@ -146,8 +148,14 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
+	accountType := c.GetString("account_type")
+	if (body.Status == "stored" || body.Status == "returned") && accountType != "employee" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "admin access required"})
+		return
+	}
+
 	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := assertBoxOwnership(bc.service, c, boxID, userID); err != nil {
+	if err := assertBoxOwnership(bc.service, c, boxID, userID, &accountType); err != nil {
 		return
 	}
 
@@ -164,13 +172,14 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 
 // DeleteBox godoc
 // @Summary Delete a box (soft delete)
-// @Description Soft delete a box before pickup
+// @Description Soft delete a box. Employees can delete any box, users can only delete their own.
 // @Tags boxes
 // @Produce json
 // @Param id path string true "Box ID"
-// @Success 200 {object} map[string]string
-// @Failure 400 {object} map[string]string
-// @Failure 500 {object} map[string]string
+// @Success 200 {object} map[string]string "Box deleted successfully"
+// @Failure 400 {object} map[string]string "Invalid box ID"
+// @Failure 404 {object} map[string]string "Box not found or inaccessible"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /boxes/{id} [delete]
 func (bc *BoxController) DeleteBox(c *gin.Context) {
 	boxID, err := uuid.Parse(c.Param("id"))
@@ -183,7 +192,8 @@ func (bc *BoxController) DeleteBox(c *gin.Context) {
 	}
 
 	userID := c.MustGet("user_id").(uuid.UUID)
-	if err := assertBoxOwnership(bc.service, c, boxID, userID); err != nil {
+	accountType := c.GetString("account_type")
+	if err := assertBoxOwnership(bc.service, c, boxID, userID, &accountType); err != nil {
 		return
 	}
 
@@ -198,7 +208,10 @@ func (bc *BoxController) DeleteBox(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Box deleted"})
 }
 
-func assertBoxOwnership(service *usecase.BoxService, c *gin.Context, boxID, userID uuid.UUID) error {
+func assertBoxOwnership(service *usecase.BoxService, c *gin.Context, boxID, userID uuid.UUID, accountType *string) error {
+	if *accountType == "employee" {
+		return nil
+	}
 	_, err := service.GetBoxByID(c.Request.Context(), boxID, userID)
 	if err != nil {
 		utils.Logger.Warn("Unauthorized access or box not found",
