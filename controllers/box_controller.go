@@ -136,7 +136,7 @@ func (bc *BoxController) UpdateStatus(c *gin.Context) {
 	}
 
 	var body struct {
-		Status string `json:"status" binding:"required,oneof=pending_pickup stored in_transit returned disposed"`
+		Status string `json:"status" binding:"required,oneof=in_transit pending_pack pending_pickup stored returned disposed"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Logger.Warn("Invalid status update payload",

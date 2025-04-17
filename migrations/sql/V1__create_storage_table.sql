@@ -16,7 +16,7 @@ CREATE TABLE boxes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL,
     packing_mode VARCHAR(20) NOT NULL CHECK (packing_mode IN ('self', 'sort')),
-    status VARCHAR(30) NOT NULL CHECK (status IN ('pending_pickup', 'stored', 'in_transit', 'returned', 'disposed')),
+    status VARCHAR(30) NOT NULL CHECK (status IN ('in_transit', 'pending_pack', 'pending_pickup', 'stored', 'returned', 'disposed')),
     location_id UUID REFERENCES storage_locations(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),

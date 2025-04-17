@@ -22,7 +22,7 @@ func (s *BoxService) CreateBox(ctx context.Context, userID uuid.UUID, req dto.Cr
 		ID:          uuid.New(),
 		UserID:      userID,
 		PackingMode: req.PackingMode,
-		Status:      "pending_pickup",
+		Status:      "in_transit",
 	}
 
 	if req.PackingMode == "self" {
